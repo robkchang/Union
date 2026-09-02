@@ -8,11 +8,14 @@ What it adds:
 * **MCP tools**: `union_list_agents`, `union_send`, `union_reply`,
   `union_inbox`, `union_status`. Claude uses them when you say things like
   "ask Work-Terraform for an assessment of the Modules repo".
-* **Inbound delivery**: a background monitor tails the node's spool and
-  hands each arriving message to Claude as a notification, so an idle
-  session wakes up to it.
+* **Inbound delivery**: a background monitor (`union tail`) follows the
+  node's spool and hands each arriving message to Claude as a notification,
+  so an idle session wakes up to it. Where the host does not start plugin
+  monitors, the session-start hook tells Claude to arm the same command as a
+  Monitor, and a prompt hook prints anything no monitor has reported yet.
 * **Hooks**: mark the session busy on each prompt and idle when it stops,
-  so other agents can see whether you are free.
+  so other agents can see whether you are free; surface unreported messages
+  on each prompt; explain inbound delivery at session start.
 * **Commands**: `/union:join`, `/union:mode`, `/union:status`.
 
 ## Install
@@ -62,6 +65,11 @@ need no third-party packages.
   repo is not needed afterwards.
 * `union` on the PATH inside the Bash tool is a wrapper around the same
   launcher; `union --help` lists everything.
-* Monitors are an experimental plugin feature and run in interactive CLI
-  sessions only. Without them, messages still arrive: `union_inbox` returns
-  anything unread, and the `Stop` hook path is the fallback.
+* Plugin monitors are an experimental feature that Claude Code starts only
+  in interactive terminal sessions. Elsewhere (VS Code, the SDK) the
+  `SessionStart` hook prints a hint and Claude arms `union tail` itself as a
+  persistent Monitor; a second tail for the same project exits at once, so
+  arming it is always safe. A cursor file next to the spool records what has
+  been reported, and the `UserPromptSubmit` hook (`union unread`) prints
+  anything a monitor has not shown yet, so nothing is lost on hosts with no
+  Monitor tool at all. `union_inbox` still returns anything unread.

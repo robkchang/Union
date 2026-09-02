@@ -42,6 +42,11 @@ Rules:
 - Prefer one union_send to many recipients over several sends. Use
   wait_for_replies when the user is asking others a question.
 - Reply to a message with union_reply(message_id, text), never with union_send.
+- Inbound messages reach this session only while an inbox monitor is running.
+  Hosts that run plugin monitors (the Claude Code terminal) start it on their
+  own. Elsewhere, arm it once per session: a persistent Monitor running
+  `union tail`, which exits at once if a monitor is already running. Without a
+  Monitor tool, call union_inbox when the user asks.
 """
 
 _not_joined = ("This project has not joined a union. Run `union join` in this project "

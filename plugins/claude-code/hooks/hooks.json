@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/launch.py\" --data \"${CLAUDE_PLUGIN_DATA}\" bootstrap",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/launch.py\" --data \"${CLAUDE_PLUGIN_DATA}\" session-start",
             "timeout": 600
           }
         ]
@@ -17,6 +17,11 @@
           {
             "type": "command",
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/launch.py\" --data \"${CLAUDE_PLUGIN_DATA}\" status busy",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/launch.py\" --data \"${CLAUDE_PLUGIN_DATA}\" unread",
             "timeout": 10
           }
         ]
