@@ -188,3 +188,75 @@ def test_evicted_from_web(two_nodes, union):
     assert _wait(lambda: "Beta" not in a.roster)
     r = a.send("Beta", "still there?")
     assert r["results"][0]["status"] == "not_member"
+
+
+def test_spool_cursor_unread_hook_and_tail_lock(two_nodes, monkeypatch, capsys):
+    """The prompt hook reports each message once; the tail lock is exclusive."""
+    import io
+    import threading
+    from union_node import spool as spoolmod
+
+    a, b = two_nodes
+    d = cfgmod.union_dir(b.project_dir)
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(b.project_dir)})))
+    assert cli.main(["unread"]) == 0
+    assert capsys.readouterr().out == ""          # first run: nothing pending, cursor set to end
+
+    spool_path = d / cfgmod.SPOOL_FILE
+
+    def spooled(n):
+        return spool_path.exists() and len(spool_path.read_text("utf-8").splitlines()) >= n
+
+    r = a.send("Beta", "first", kind="data")
+    assert r["results"][0]["status"] == "sent"
+    assert _wait(lambda: spooled(1))
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(b.project_dir)})))
+    assert cli.main(["unread"]) == 0
+    out = capsys.readouterr().out
+    assert "from Alpha" in out and "first" in out
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(b.project_dir)})))
+    assert cli.main(["unread"]) == 0
+    assert capsys.readouterr().out == ""          # reported once only
+
+    # The tail starts at the cursor, so a message that arrived before it ran
+    # is still reported, and the cursor it writes stops the hook repeating it.
+    a.send("Beta", "second", kind="data")
+    assert _wait(lambda: spooled(2))
+    lock = spoolmod.acquire_tail_lock(d)
+    assert lock is not None
+    assert spoolmod.acquire_tail_lock(d) is None   # exclusive
+    assert cli.main(["--project", str(b.project_dir), "tail"]) == 0   # second tail exits at once
+    assert "already running" in capsys.readouterr().err
+    spoolmod.release_tail_lock(lock)
+
+    pos = spoolmod.start_position(d, d / cfgmod.SPOOL_FILE)
+    lines, new_pos = spoolmod.read_new(d / cfgmod.SPOOL_FILE, pos)
+    assert [l for l in lines if "second" in l]
+    spoolmod.write_cursor(d, new_pos)
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(b.project_dir)})))
+    assert cli.main(["unread"]) == 0
+    assert capsys.readouterr().out == ""
+
+    # A running tail prints new lines and the lock is released when it stops.
+    out_lines: list[str] = []
+    real_print = print
+    started = threading.Event()
+
+    def run_tail():
+        started.set()
+        cli.main(["--project", str(b.project_dir), "tail"])
+
+    def fake_print(*args, **kw):
+        if kw.get("file") is None and args:
+            out_lines.append(str(args[0]))
+        real_print(*args, **kw)
+
+    monkeypatch.setattr("builtins.print", fake_print)
+    t = threading.Thread(target=run_tail, daemon=True)
+    t.start()
+    assert started.wait(2)
+    assert _wait(lambda: (d / spoolmod.LOCK_FILE).exists())
+    time.sleep(0.3)
+    a.send("Beta", "third", kind="data")
+    assert _wait(lambda: any("third" in l for l in out_lines), timeout=5)
+    b.drain_inbox()

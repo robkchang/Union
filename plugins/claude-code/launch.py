@@ -6,6 +6,8 @@ at it.
 
     python launch.py --data <plugin-data-dir> [--project <dir>] <union args...>
     python launch.py --data <plugin-data-dir> bootstrap        # just ensure the install
+    python launch.py --data <plugin-data-dir> session-start    # bootstrap, then tell the model
+                                                               # how inbound messages arrive
 
 Where the node code comes from:
 * running from the repo checkout (`--plugin-dir plugins/claude-code`): the
@@ -36,6 +38,10 @@ GIT_SOURCE = "git+https://github.com/robkchang/Union.git"
 MARKER = f"union-node-installed-v2-py{sys.version_info[0]}.{sys.version_info[1]}"
 LOCK_STALE_SECONDS = 15 * 60
 WAIT_FOR_OTHER_INSTALLER = 10 * 60
+SESSION_HINT = ("[union] Messages from your other agents arrive only while an inbox monitor "
+                "runs. If this host does not start plugin monitors itself (VS Code, SDK), arm one "
+                "now: a persistent Monitor running `union tail`. It exits at once if a monitor is "
+                "already running, so arming it is always safe.")
 
 
 def log(msg: str) -> None:
@@ -175,13 +181,19 @@ def main() -> int:
     data_raw, argv = take(argv, "--data")
     project, argv = take(argv, "--project")
     data = pathlib.Path(data_raw) if data_raw else default_data_dir()
-    quiet_fail = argv and argv[0] in ("bootstrap", "status", "tail")
+    quiet_fail = argv and argv[0] in ("bootstrap", "session-start", "status", "tail", "unread")
     try:
         path_entries = bootstrap(data)
     except Exception as exc:
         log(f"could not set up union-node: {exc}")
         return 0 if quiet_fail else 1
     if argv and argv[0] == "bootstrap":
+        return 0
+    if argv and argv[0] == "session-start":
+        # SessionStart hook: stdout becomes context for the model. Hosts that
+        # run plugin monitors (the terminal CLI) already tail the inbox; on
+        # the others (VS Code, SDK) the model has to arm the monitor itself.
+        print(SESSION_HINT, flush=True)
         return 0
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(path_entries + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))

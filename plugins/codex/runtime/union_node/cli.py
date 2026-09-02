@@ -7,6 +7,7 @@
     union status busy|idle            used by harness hooks; reads hook JSON on stdin for cwd
     union mcp                         run the MCP server over stdio
     union tail                        follow the spool; used as a harness monitor
+    union unread                      hook: print messages no monitor has reported yet
 """
 from __future__ import annotations
 
@@ -19,6 +20,7 @@ import sys
 import time
 
 from . import config as cfgmod
+from . import spool as spoolmod
 from .client import UnionError
 from .node import Node
 
@@ -144,15 +146,7 @@ def cmd_listen(args) -> int:
 
 def cmd_status(args) -> int:
     """Harness hook. Must print nothing and exit 0 whatever happens."""
-    cwd = None
-    if not sys.stdin.isatty():
-        try:
-            payload = json.loads(sys.stdin.read() or "{}")
-            cwd = payload.get("cwd")
-        except Exception:
-            cwd = None
-    start = pathlib.Path(cwd) if cwd else (pathlib.Path(args.project) if args.project else None)
-    project = cfgmod.find_project_dir(start)
+    project = _hook_project(args)
     if not project:
         return 0
     try:
@@ -168,36 +162,73 @@ def cmd_mcp(args) -> int:
     return mcp_main(pathlib.Path(args.project) if args.project else None, args.harness)
 
 
+def _hook_project(args) -> pathlib.Path | None:
+    """Hooks get JSON on stdin with the session's cwd; fall back to --project."""
+    cwd = None
+    if not sys.stdin.isatty():
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+            cwd = payload.get("cwd")
+        except Exception:
+            cwd = None
+    start = pathlib.Path(cwd) if cwd else (pathlib.Path(args.project) if args.project else None)
+    return cfgmod.find_project_dir(start)
+
+
 def cmd_tail(args) -> int:
-    """Follow the spool and print one line per message. Starts at the end,
-    so only messages from now on are reported. If this project is not in a
-    union yet, waits quietly for a `union join`."""
+    """Follow the spool and print one line per message. Picks up where the
+    last reader left off (the cursor), or at the end on a first run, so only
+    new messages are reported. If this project is not in a union yet, waits
+    quietly for a `union join`. One tail per project: a second one exits at
+    once, so a harness or the model can arm it without checking first."""
+    lock = None
     try:
         project = _project(args)
         while not project:
             time.sleep(2)
             project = _project(args)
-        path = cfgmod.union_dir(project) / cfgmod.SPOOL_FILE
-        pos = path.stat().st_size if path.exists() else 0
+        d = cfgmod.union_dir(project)
+        lock = spoolmod.acquire_tail_lock(d)
+        if lock is None:
+            print("[union] an inbox monitor is already running for this project", file=sys.stderr, flush=True)
+            return 0
+        path = d / cfgmod.SPOOL_FILE
+        pos = spoolmod.start_position(d, path)
+        spoolmod.write_cursor(d, pos)
         while True:
-            if path.exists():
-                size = path.stat().st_size
-                if size < pos:
-                    pos = 0
-                if size > pos:
-                    with open(path, "r", encoding="utf-8") as f:
-                        f.seek(pos)
-                        chunk = f.read()
-                        pos = f.tell()
-                    for line in chunk.splitlines():
-                        try:
-                            rec = json.loads(line)
-                            print(rec.get("line", ""), flush=True)
-                        except ValueError:
-                            continue
+            lines, new_pos = spoolmod.read_new(path, pos)
+            if new_pos != pos:
+                pos = new_pos
+                spoolmod.write_cursor(d, pos)
+            for line in lines:
+                print(line, flush=True)
             time.sleep(0.5)
     except KeyboardInterrupt:
         return 0
+    finally:
+        spoolmod.release_tail_lock(lock)
+
+
+def cmd_unread(args) -> int:
+    """Harness hook (UserPromptSubmit): print spool lines no reader has
+    reported yet, so a host without monitors still surfaces messages on the
+    next prompt. Prints nothing when a tail is keeping up. Exits 0 always."""
+    try:
+        project = _hook_project(args)
+        if not project:
+            return 0
+        d = cfgmod.union_dir(project)
+        path = d / cfgmod.SPOOL_FILE
+        pos = spoolmod.start_position(d, path)
+        lines, new_pos = spoolmod.read_new(path, pos)
+        # Always persist: on a first run this pins the cursor to the end so
+        # only messages from now on are reported next time.
+        spoolmod.write_cursor(d, new_pos)
+        for line in lines:
+            print(line, flush=True)
+    except Exception:
+        pass
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -233,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     mcp.add_argument("--harness", default="claude-code")
     mcp.set_defaults(fn=cmd_mcp)
     sub.add_parser("tail", help="Follow the inbox spool (harness monitor)").set_defaults(fn=cmd_tail)
+    sub.add_parser("unread", help="Hook: print messages no monitor has reported yet").set_defaults(fn=cmd_unread)
 
     args = p.parse_args(argv)
     return args.fn(args)
