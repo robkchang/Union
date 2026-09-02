@@ -1,0 +1,15 @@
+{
+  "name": "union",
+  "owner": { "name": "robkchang" },
+  "metadata": {
+    "description": "Union: message your other AI coding sessions across machines and harnesses."
+  },
+  "plugins": [
+    {
+      "name": "union",
+      "description": "Union node for Claude Code: messaging tools, inbound delivery, and /union:join.",
+      "source": "./plugins/claude-code",
+      "version": "0.1.0"
+    }
+  ]
+}

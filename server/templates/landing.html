@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ site }} — {{ "Sign In" if mode == "login" else "Create Account" }}{% endblock %}
+{% block body_class %}landing{% endblock %}
+
+{% block content %}
+<main class="landing__wrap">
+  <div class="landing__card">
+
+    <div class="landing__logo">
+      <span class="landing__logo-mark">⛓</span>
+      <span class="landing__logo-name">{{ site }}</span>
+    </div>
+
+    <div class="landing__tabs">
+      <a href="/login" class="landing__tab {% if mode == 'login' %}landing__tab--active{% endif %}">Sign In</a>
+      <a href="/register" class="landing__tab {% if mode == 'register' %}landing__tab--active{% endif %}">Register</a>
+    </div>
+
+    {% if errors.form %}<p class="field__error" style="margin-bottom:1rem">{{ errors.form }}</p>{% endif %}
+
+    <form method="post" action="{{ '/login' if mode == 'login' else '/register' }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input class="field__input" id="username" name="username" autocomplete="username" autofocus
+               value="{{ username or '' }}">
+        {% if errors.username %}<p class="field__error">{{ errors.username }}</p>{% endif %}
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input class="field__input" id="password" name="password" type="password"
+               autocomplete="{{ 'current-password' if mode == 'login' else 'new-password' }}">
+        {% if errors.password %}<p class="field__error">{{ errors.password }}</p>{% endif %}
+      </div>
+
+      {% if mode == "register" %}
+      <div class="field">
+        <label for="confirm">Confirm</label>
+        <input class="field__input" id="confirm" name="confirm" type="password" autocomplete="new-password">
+        {% if errors.confirm %}<p class="field__error">{{ errors.confirm }}</p>{% endif %}
+      </div>
+      {% if code_required %}
+      <div class="field">
+        <label for="code">Registration code</label>
+        <input class="field__input" id="code" name="code" autocomplete="off">
+        {% if errors.code %}<p class="field__error">{{ errors.code }}</p>{% endif %}
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <button type="submit" class="btn btn--primary btn--full">
+        {{ "Sign In" if mode == "login" else "Create Account" }}
+      </button>
+    </form>
+
+    {% if mode == "login" %}
+    <div class="landing__divider"><span>or</span></div>
+    <button type="button" class="btn btn--ghost btn--full" id="passkeyBtn">Sign in with Passkey</button>
+    <p id="passkeyErr" class="field__error" style="margin-top:.5rem" hidden></p>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{% if mode == "login" %}
+<script>
+const passkeyBtn = document.getElementById('passkeyBtn');
+const passkeyErr = document.getElementById('passkeyErr');
+if (!window.PublicKeyCredential || !PublicKeyCredential.parseRequestOptionsFromJSON) passkeyBtn.hidden = true;
+passkeyBtn.addEventListener('click', async () => {
+  passkeyErr.hidden = true; passkeyBtn.disabled = true; passkeyBtn.textContent = 'Waiting for device…';
+  try {
+    const beginRes = await fetch('/passkey/auth/begin', { method: 'POST' });
+    if (!beginRes.ok) throw new Error('Could not start passkey sign-in.');
+    const opts = await beginRes.json();
+    const cred = await navigator.credentials.get({ publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(opts) });
+    const completeRes = await fetch('/passkey/auth/complete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cred.toJSON()),
+    });
+    const data = await completeRes.json();
+    if (!completeRes.ok) throw new Error(data.error || 'Sign-in failed.');
+    window.location.href = data.redirect || '/';
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') { passkeyErr.textContent = e.message || 'Passkey sign-in failed.'; passkeyErr.hidden = false; }
+    passkeyBtn.disabled = false; passkeyBtn.textContent = 'Sign in with Passkey';
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

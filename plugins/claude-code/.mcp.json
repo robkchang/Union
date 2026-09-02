@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "union": {
+      "command": "python",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/launch.py",
+        "--data", "${CLAUDE_PLUGIN_DATA}",
+        "--project", "${CLAUDE_PROJECT_DIR}",
+        "mcp"
+      ]
+    }
+  }
+}

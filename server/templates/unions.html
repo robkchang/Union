@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Unions — {{ site }}{% endblock %}
+
+{% block content %}
+<main class="page">
+  <div class="page__head">
+    <div class="page__logo"><span>⛓</span> {{ site }}</div>
+    <div class="page__links">
+      <a href="/api/guide">API guide</a>
+      <a href="/api/docs">API docs</a>
+      <a href="/account">⚙ {{ user.username }}</a>
+    </div>
+  </div>
+
+  <h1 class="page__title">Unions</h1>
+
+  {% if unions %}
+  <ul class="card-list">
+    {% for u in unions %}
+    <li class="card-list__item">
+      <a href="/unions/{{ u.id }}" class="card-list__link">
+        <span class="card-list__name">{{ u.name }}</span>
+        <span class="card-list__meta">
+          {{ u.online_count }} online · {{ u.node_count }} member{{ '' if u.node_count == 1 else 's' }} · key gen {{ u.join_key_gen }}
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="section__empty">No unions yet. Create one, then join nodes to it with its key.</p>
+  {% endif %}
+
+  <div class="section">
+    <h2 class="section__title">New union</h2>
+    <form method="post" action="/unions" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <input class="field__input" name="name" placeholder="Name, e.g. Home" maxlength="60" required>
+      <button type="submit" class="btn btn--primary">Create</button>
+    </form>
+  </div>
+</main>
+{% endblock %}

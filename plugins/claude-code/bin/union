@@ -1,0 +1,12 @@
+#!/bin/sh
+# Union CLI wrapper for the Bash tool. Finds a Python that actually runs:
+# on Windows, `python3` is often the Microsoft Store stub, which prints an
+# install prompt and fails, so probe each candidate before using it.
+DIR="$(cd "$(dirname "$0")" && pwd)"
+for py in python3 python py; do
+  if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >/dev/null 2>&1; then
+    exec "$py" "$DIR/../launch.py" "$@"
+  fi
+done
+echo "union: no Python 3.11+ found on PATH (tried python3, python, py)" >&2
+exit 127

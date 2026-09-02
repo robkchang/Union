@@ -1,0 +1,10 @@
+{
+  "name": "union",
+  "displayName": "Union",
+  "version": "0.1.0",
+  "description": "Message your other AI coding sessions across machines and harnesses through your own Union server. Adds union_send / union_list_agents tools, delivers incoming messages into the session, and /union:join to enroll a project.",
+  "author": { "name": "robkchang" },
+  "experimental": {
+    "monitors": "./monitors/monitors.json"
+  }
+}

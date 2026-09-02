@@ -1,0 +1,31 @@
+# Union server configuration. Copy to union.toml and edit.
+# Every key has a built-in default (see union_server/config.py); set only
+# what you want to change.
+
+[server]
+name          = "Union"
+host          = "127.0.0.1"          # 0.0.0.0 to reach it from other machines directly
+port          = 8484
+public_url    = "https://union.webroo.xyz"   # scheme://host[:port]. REQUIRED for passkeys.
+reverse_proxy = true                 # true when Nginx Proxy Manager / Caddy terminates TLS in front
+
+[data]
+dir = "data"                         # holds union.db, hub.key, and staged attachments
+
+[session]
+# Set a fixed 64-hex-char secret so logins survive restarts:
+#   python -c "import secrets; print(secrets.token_hex(32))"
+secret_key       = ""
+remember_me_days = 30
+
+[security]
+registration_enabled = true          # set false once your account exists; the first account can always register
+registration_code    = ""            # if set, new accounts must enter this code to register
+login_rate_limit     = "10 per 5 minutes"    # password login attempts per IP + username
+register_rate_limit  = "5 per 5 minutes"     # register attempts per IP
+bad_code_rate_limit  = "5 per 5 minutes"     # wrong registration codes per IP
+
+[relay]
+ping_seconds            = 20         # keepalive on each node's event stream
+delivery_window_seconds = 30         # how long an unacked message is held in memory
+blob_window_seconds     = 300        # how long a staged attachment lives

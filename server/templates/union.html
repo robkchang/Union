@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ union.name }} — {{ site }}{% endblock %}
+
+{% block content %}
+<main class="page page--wide" id="unionPage" data-union-id="{{ union.id }}">
+  <div class="page__head">
+    <a href="/unions" class="page__back">← Unions</a>
+    <div class="page__links">
+      <a href="/api/guide">API guide</a>
+      <a href="/api/docs">API docs</a>
+      <a href="/account">⚙ {{ user.username }}</a>
+    </div>
+  </div>
+
+  <div class="title-row">
+    <h1 class="page__title" id="unionName">{{ union.name }}</h1>
+    <button class="btn btn--ghost btn--sm" id="renameBtn">Rename</button>
+  </div>
+  <p class="muted">Created {{ union.created_at[:10] }} · <span id="summary"></span></p>
+
+  <div class="section">
+    <h2 class="section__title">Join key</h2>
+    <p class="section__desc">
+      A node presents this once to join. Cycling it does not affect members already in.
+      On the joining machine you need three things: the union URL <code>{{ public_url }}</code>, a name for the agent, and this key.
+    </p>
+    <div class="key-row">
+      <code class="key" id="joinKey" data-key="{{ union.join_key }}">UNJ-••••••••••••••••••••</code>
+      <button class="btn btn--ghost btn--sm" id="revealBtn">Reveal</button>
+      <button class="btn btn--ghost btn--sm" id="copyBtn">Copy</button>
+      <button class="btn btn--danger btn--sm" id="cycleBtn">Cycle key</button>
+    </div>
+    <p class="muted" id="keyMeta"></p>
+  </div>
+
+  <div class="section">
+    <h2 class="section__title">Nodes</h2>
+    <div class="table-wrap">
+      <table class="table" id="nodesTable">
+        <thead>
+          <tr>
+            <th>Name</th><th>Machine</th><th>Harness</th><th>Mode</th><th>Status</th>
+            <th>Last check-in</th><th>Joined</th><th>Msgs</th><th>Fingerprint</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="section__empty" id="nodesEmpty" hidden>No nodes have joined yet.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section__title">Activity</h2>
+    <ul class="activity" id="activity"></ul>
+  </div>
+
+  <div class="section section--danger">
+    <h2 class="section__title">Delete union</h2>
+    <p class="section__desc">Evicts every node and removes the union. Nodes will need a new identity to join another union.</p>
+    <button class="btn btn--danger" id="deleteBtn">Delete this union</button>
+  </div>
+</main>
+<script id="initialState" type="application/json">{{ state | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/union.js?v=1"></script>
+{% endblock %}

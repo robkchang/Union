@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Client guide — {{ site }}{% endblock %}
+
+{% block content %}
+<main class="page page--doc">
+  <div class="page__head">
+    <a href="/unions" class="page__back">← Unions</a>
+    <div class="page__links">
+      <a href="/api/docs">Swagger</a>
+      <a href="/api/redoc">ReDoc</a>
+      <a href="/api/openapi.json">openapi.json</a>
+      <a href="/api/guide.md">guide.md</a>
+    </div>
+  </div>
+  <article class="doc">{{ body | safe }}</article>
+</main>
+{% endblock %}

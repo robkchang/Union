@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="csrf-token" content="{{ csrf }}">
+  <title>{% block title %}{{ site }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/main.css?v=1">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% if flashes %}
+  <div class="flash-container">
+    {% for category, message in flashes %}
+      <div class="flash flash--{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

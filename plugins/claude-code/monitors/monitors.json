@@ -1,0 +1,7 @@
+[
+  {
+    "name": "union-inbox",
+    "command": "python \"${CLAUDE_PLUGIN_ROOT}/launch.py\" --data \"${CLAUDE_PLUGIN_DATA}\" --project \"${CLAUDE_PROJECT_DIR}\" tail",
+    "description": "Union: messages arriving from your other agents"
+  }
+]

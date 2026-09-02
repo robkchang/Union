@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Account — {{ site }}{% endblock %}
+{% block body_class %}account{% endblock %}
+
+{% block content %}
+<main class="page">
+  <div class="page__head">
+    <a href="/unions" class="page__back">← Unions</a>
+    <div class="page__logo"><span>⛓</span> {{ site }}</div>
+  </div>
+
+  <h1 class="page__title">Account</h1>
+  <p class="muted">Signed in as <strong>{{ user.username }}</strong>.</p>
+
+  <div class="section">
+    <h2 class="section__title">Passkeys</h2>
+    <p class="section__desc">Sign in with Face ID, Touch ID, Windows Hello, or a security key. No password needed.</p>
+
+    {% if passkeys %}
+    <ul class="passkey-list">
+      {% for pk in passkeys %}
+      <li class="passkey-item">
+        <div class="passkey-item__info">
+          <span class="passkey-item__name">{{ pk.name }}</span>
+          <span class="passkey-item__meta">Added {{ pk.created_at[:10] }}{% if pk.last_used_at %} · Last used {{ pk.last_used_at[:10] }}{% endif %}</span>
+        </div>
+        <form method="post" action="/passkey/{{ pk.id }}/delete">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Remove this passkey?')">Remove</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="section__empty">No passkeys registered yet.</p>
+    {% endif %}
+
+    <button type="button" class="btn btn--primary" id="addPasskeyBtn">Add Passkey</button>
+    <p id="passkeyStatus" class="section__status" hidden></p>
+  </div>
+
+  <div class="section">
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <button type="submit" class="btn btn--ghost">Sign Out</button>
+    </form>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrf = document.querySelector('meta[name=csrf-token]').content;
+const statusEl = document.getElementById('passkeyStatus');
+const addBtn = document.getElementById('addPasskeyBtn');
+if (!window.PublicKeyCredential || !PublicKeyCredential.parseCreationOptionsFromJSON) {
+  addBtn.disabled = true; addBtn.title = 'Your browser does not support passkeys.';
+}
+addBtn.addEventListener('click', async () => {
+  statusEl.hidden = true; addBtn.disabled = true; addBtn.textContent = 'Setting up…';
+  try {
+    const beginRes = await fetch('/passkey/register/begin', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+    if (!beginRes.ok) throw new Error(await beginRes.text());
+    const opts = await beginRes.json();
+    const cred = await navigator.credentials.create({ publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(opts) });
+    const credJson = cred.toJSON(); credJson.name = 'My Passkey';
+    const completeRes = await fetch('/passkey/register/complete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(credJson),
+    });
+    const data = await completeRes.json();
+    if (!completeRes.ok) throw new Error(data.error || 'Registration failed.');
+    statusEl.textContent = 'Passkey added!'; statusEl.className = 'section__status section__status--ok'; statusEl.hidden = false;
+    setTimeout(() => location.reload(), 1200);
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') {
+      statusEl.textContent = e.message || 'Something went wrong.'; statusEl.className = 'section__status section__status--error'; statusEl.hidden = false;
+    }
+    addBtn.disabled = false; addBtn.textContent = 'Add Passkey';
+  }
+});
+</script>
+{% endblock %}

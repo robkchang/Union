@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "union-protocol"
+version = "0.1.0"
+description = "Wire models and cryptography shared by the Union server and every Union client."
+requires-python = ">=3.11"
+dependencies = [
+    "cryptography>=42",
+]
+
+[project.optional-dependencies]
+# The pydantic wire models are used by the server (validation, OpenAPI).
+# Clients only need keys/signing/seal and can skip this extra.
+models = ["pydantic>=2.5"]
+test = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["union_protocol*"]
