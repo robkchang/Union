@@ -32,3 +32,6 @@ When loaded from this checkout, `launch.py` runs `protocol/` and `node/`
 directly and installs only `cryptography` under `~/.union/codex/site`.
 Installed plugins use the bundled `runtime/` copy of those packages, keeping
 the plugin self-contained and independent of the source checkout.
+
+Run `python plugins/codex/sync_runtime.py` before releasing a plugin update so
+the bundled runtime remains identical to the shared packages.

@@ -3,12 +3,12 @@
     "union": {
       "command": "python",
       "args": [
-        "launch.py",
+        "-c",
+        "import os,pathlib,runpy,sys;root=pathlib.Path(os.environ.get('CODEX_HOME', pathlib.Path.home()/'.codex'))/'plugins'/'cache'/'union'/'codex';launch=max(root.glob('*/launch.py'),key=lambda p:p.parent.name);sys.argv=[str(launch),*sys.argv[1:]];runpy.run_path(str(launch),run_name='__main__')",
         "mcp",
         "--harness",
         "codex"
-      ],
-      "cwd": "."
+      ]
     }
   }
 }

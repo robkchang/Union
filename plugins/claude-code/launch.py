@@ -32,7 +32,7 @@ import sys
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
-GIT_SOURCE = "git+https://github.com/robchang/Union.git"
+GIT_SOURCE = "git+https://github.com/robkchang/Union.git"
 MARKER = f"union-node-installed-v2-py{sys.version_info[0]}.{sys.version_info[1]}"
 LOCK_STALE_SECONDS = 15 * 60
 WAIT_FOR_OTHER_INSTALLER = 10 * 60

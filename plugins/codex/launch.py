@@ -13,7 +13,7 @@ import sys
 
 
 HERE = pathlib.Path(__file__).resolve().parent
-GIT_SOURCE = "git+https://github.com/robchang/Union.git"
+GIT_SOURCE = "git+https://github.com/robkchang/Union.git"
 SITE = pathlib.Path.home() / ".union" / "codex" / "site"
 MARKER = SITE / f"installed-py{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -61,6 +61,22 @@ def install() -> list[str]:
     return [str(SITE)]
 
 
+def with_workspace_project(argv: list[str]) -> list[str]:
+    """Make Codex's current workspace explicit for the shared node CLI.
+
+    The MCP bootstrap starts this launcher without a plugin-cache cwd, so the
+    inherited cwd is the active workspace. Passing it explicitly prevents a
+    later subprocess from accidentally resolving a `.union` in plugin state.
+    """
+    if "--project" in argv:
+        return argv
+    project = pathlib.Path.cwd().resolve()
+    if "plugins" in project.parts and "cache" in project.parts:
+        print("[union codex plugin] refusing to use the plugin cache as a project", file=sys.stderr, flush=True)
+        return argv
+    return ["--project", str(project), *argv]
+
+
 def main() -> int:
     try:
         paths = install()
@@ -69,7 +85,7 @@ def main() -> int:
         return 1
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(paths + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
-    return subprocess.call([sys.executable, "-m", "union_node.cli", *sys.argv[1:]], env=env)
+    return subprocess.call([sys.executable, "-m", "union_node.cli", *with_workspace_project(sys.argv[1:])], env=env)
 
 
 if __name__ == "__main__":

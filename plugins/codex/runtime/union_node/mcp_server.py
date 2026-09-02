@@ -44,8 +44,10 @@ Rules:
 - Reply to a message with union_reply(message_id, text), never with union_send.
 """
 
-_not_joined = ("This project has not joined a union. Run `union join` in this project "
-               "(or /union:join); the tools pick it up on the next call.")
+def _not_joined(harness: str) -> str:
+    if harness == "codex":
+        return "This project has not joined a union. Use union_join in this Codex session."
+    return "This project has not joined a union. Run `union join` in this project (or /union:join); the tools pick it up on the next call."
 
 
 def _guard(fn):
@@ -87,7 +89,7 @@ class Tools:
                 self.node = node
                 log.info("node %s started late for %s", node.cfg.name, project)
         if self.node is None:
-            raise RuntimeError(_not_joined)
+            raise RuntimeError(_not_joined(self.harness))
         if self.node.evicted_reason:
             raise RuntimeError(f"This node was removed from the union ({self.node.evicted_reason}). Tell the user; Union tools no longer work here.")
         return self.node
@@ -99,6 +101,8 @@ class Tools:
         if self.node is not None:
             return f"This project has already joined Union as {self.node.cfg.name}."
         project = (self.project_dir or pathlib.Path.cwd()).resolve()
+        if cfgmod.is_plugin_cache_dir(project):
+            return "Union cannot join the Codex plugin cache. Start Codex from the project you want to join."
         if cfgmod.load_config(project):
             return f"{project} already has a Union node. Run `union leave` there before joining another Union."
         node = Node.join(project, url, name, join_key, mode=mode, harness=self.harness)

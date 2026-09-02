@@ -53,9 +53,17 @@ def union_dir(project_dir: pathlib.Path) -> pathlib.Path:
     return project_dir / UNION_DIR
 
 
+def is_plugin_cache_dir(path: pathlib.Path) -> bool:
+    """Plugin caches are implementation state, never a Union project."""
+    parts = {part.lower() for part in path.resolve().parts}
+    return ".codex" in parts and "plugins" in parts and "cache" in parts
+
+
 def find_project_dir(start: pathlib.Path | None = None) -> pathlib.Path | None:
     """Walk up from `start` (default cwd) to the first directory holding `.union/node.json`."""
     p = (start or pathlib.Path.cwd()).resolve()
+    if is_plugin_cache_dir(p):
+        return None
     for candidate in (p, *p.parents):
         if (candidate / UNION_DIR / CONFIG_FILE).exists():
             return candidate

@@ -33,10 +33,11 @@ to hold tasks for local approval. Then ask Codex to run `union_status` or
 
 ## Update this local plugin
 
-After changing `plugins/codex`, bump its cache-busted version and reinstall:
+After changing `plugins/codex`, update the plugin version in
+`.codex-plugin/plugin.json`, synchronize the bundled runtime, and reinstall:
 
 ```powershell
-python C:\Users\RobChang\.codex\skills\.system\plugin-creator\scripts\update_plugin_cachebuster.py plugins\codex
+python plugins\codex\sync_runtime.py
 codex plugin add codex@union
 ```
 

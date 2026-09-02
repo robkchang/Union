@@ -161,7 +161,7 @@ def test_mode_change_cli_and_status_hook(two_nodes, monkeypatch, capsys):
     assert "Beta" in capsys.readouterr().out
 
 
-def test_tools_text(two_nodes):
+def test_tools_text(two_nodes, tmp_path):
     a, b = two_nodes
     ta, tb = Tools(a), Tools(b)
     assert "Beta" in ta.list_agents() and "You are Alpha (mode: execute)" in ta.list_agents()
@@ -174,7 +174,7 @@ def test_tools_text(two_nodes):
     assert "kind must be" in ta.send("Beta", "x", kind="reply")
     assert "mode: execute" in ta.status()
     assert "No message with id" in ta.reply("01000000000000000000000000", "x")
-    assert "not joined" in Tools(None).list_agents().lower()
+    assert "not joined" in Tools(None, tmp_path).list_agents().lower()
 
 
 def test_evicted_from_web(two_nodes, union):
