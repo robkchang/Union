@@ -21,7 +21,7 @@ async def test_mcp_server_over_stdio(union, tmp_path):
             assert "Union" in (init.instructions or "")
             tools = await session.list_tools()
             names = sorted(t.name for t in tools.tools)
-            assert names == ["union_inbox", "union_list_agents", "union_reply", "union_send", "union_status"]
+            assert names == ["union_inbox", "union_inbox_hook", "union_list_agents", "union_reply", "union_send", "union_status"]
             send_tool = next(t for t in tools.tools if t.name == "union_send")
             assert set(send_tool.input_schema["properties"]) >= {"to", "text", "kind", "files", "wait_for_replies"}
             r = await session.call_tool("union_status", {})
@@ -41,6 +41,8 @@ async def test_mcp_server_picks_up_a_late_join(union, tmp_path):
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
+            r = await session.call_tool("union_inbox_hook", {})
+            assert r.content[0].text == ""
             r = await session.call_tool("union_list_agents", {})
             assert "has not joined" in r.content[0].text
             # Join while the server is running: no restart needed.

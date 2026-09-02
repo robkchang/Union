@@ -1,0 +1,19 @@
+{
+  "description": "Surface unread Union messages before each user prompt.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "union",
+            "tool": "union_inbox_hook",
+            "input": {},
+            "timeout": 10,
+            "statusMessage": "Checking Union inbox"
+          }
+        ]
+      }
+    ]
+  }
+}

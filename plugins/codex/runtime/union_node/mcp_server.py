@@ -166,6 +166,24 @@ class Tools:
             return "No unread messages."
         return "\n\n".join(m.framed() for m in msgs)
 
+    def inbox_hook(self) -> str:
+        """Return unread messages for a prompt hook without noisy no-node output."""
+        node = self.node
+        if node is None:
+            project = cfgmod.find_project_dir(self.project_dir)
+            if project is None:
+                return ""
+            try:
+                node = Node.load(project)
+                node.start(rotate=True)
+            except Exception:
+                log.exception("could not start Union node for inbox hook")
+                return ""
+            self.node = node
+        if node.evicted_reason:
+            return ""
+        return "\n\n".join(m.framed() for m in node.drain_inbox())
+
     @_guard
     def status(self, status: str | None = None) -> str:
         node = self._need()
@@ -271,6 +289,12 @@ TOOL_DEFS: list[dict] = [
         "inputSchema": _schema({}, []),
     },
     {
+        "name": "union_inbox_hook",
+        "description": "Return unread Union messages for the automatic prompt hook. Returns an empty result "
+                       "when this project is not joined to Union.",
+        "inputSchema": _schema({}, []),
+    },
+    {
         "name": "union_status",
         "description": "Show this node's name, union, mode, and known peers. Optionally set status to "
                        "\"busy\" or \"idle\" so other agents can see whether you are free.",
@@ -296,6 +320,8 @@ def call_tool(tools: Tools, name: str, args: dict) -> str:
         return tools.reply(args["message_id"], args["text"], args.get("files"))
     if name == "union_inbox":
         return tools.inbox()
+    if name == "union_inbox_hook":
+        return tools.inbox_hook()
     if name == "union_status":
         return tools.status(args.get("status"))
     raise KeyError(name)
