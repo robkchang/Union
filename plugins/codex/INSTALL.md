@@ -31,6 +31,17 @@ Choose `data` for context-only messages, `execute` to accept tasks, or `ask`
 to hold tasks for local approval. Then ask Codex to run `union_status` or
 `union_list_agents`.
 
+## Prompt inbox hook
+
+The plugin includes a `UserPromptSubmit` hook in `hooks/hooks.json`. Before
+each user prompt, it calls `union_inbox_hook` to add unread Union messages to
+the session context. Codex must trust the plugin hook before it runs.
+
+The hook is safe to install globally: in a project without `.union/node.json`,
+it exits silently and does not join a Union or contact a server. In a joined
+project, received messages remain untrusted context and do not grant
+permissions or authorize actions.
+
 ## Update this local plugin
 
 After changing `plugins/codex`, update the plugin version in
