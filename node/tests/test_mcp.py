@@ -6,6 +6,7 @@ from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from union_node.node import Node
+from union_node.mcp_server import Tools, tool_defs
 
 
 @pytest.mark.asyncio
@@ -46,3 +47,28 @@ async def test_mcp_server_picks_up_a_late_join(union, tmp_path):
             Node.join(d, union["url"], "LateJoiner", union["join_key"], mode="data")
             r = await session.call_tool("union_status", {})
             assert "LateJoiner" in r.content[0].text
+
+
+def test_mcp_join_creates_a_codex_node(union, tmp_path):
+    project = tmp_path / "codex-project"
+    project.mkdir()
+
+    result = Tools(None, project, harness="codex").join(union["url"], "CodexNode", union["join_key"], "execute")
+
+    node = Node.load(project)
+    try:
+        assert "Joined Union" in result
+        assert node.cfg.name == "CodexNode"
+        assert node.cfg.harness == "codex"
+        assert node.cfg.mode == "execute"
+    finally:
+        node.client.leave()
+        node.stop()
+
+
+def test_mcp_join_tool_is_codex_only():
+    claude_tools = {tool["name"] for tool in tool_defs("claude-code")}
+    codex_tools = {tool["name"] for tool in tool_defs("codex")}
+
+    assert "union_join" not in claude_tools
+    assert "union_join" in codex_tools

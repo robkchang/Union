@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "union": {
+      "command": "python",
+      "args": [
+        "launch.py",
+        "mcp",
+        "--harness",
+        "codex"
+      ],
+      "cwd": "."
+    }
+  }
+}

@@ -51,7 +51,7 @@ byte layouts, and `server/tests/refclient.py` is a working one in 150 lines.
 
 ```
 python -m venv .venv && .venv\Scripts\activate
-pip install -e ./protocol -e ./server -e ./node pytest pytest-asyncio
+pip install -e "./protocol[test]" -e "./server[test]" -e "./node[test]"
 pytest
 ```
 

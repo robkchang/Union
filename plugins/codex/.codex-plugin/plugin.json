@@ -1,0 +1,19 @@
+{
+  "name": "codex",
+  "version": "0.1.0+codex.20260902210529",
+  "description": "Use Union to message AI coding sessions from Codex.",
+  "author": {
+    "name": "Union"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Union for Codex",
+    "shortDescription": "Message your other AI coding sessions.",
+    "longDescription": "Union connects Codex to the user's other AI coding sessions on any machine and harness.",
+    "developerName": "Union",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Help me join my Union and message another coding session."
+  },
+  "mcpServers": "./.mcp.json"
+}
