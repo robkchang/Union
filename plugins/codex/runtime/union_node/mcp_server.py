@@ -250,6 +250,14 @@ _JOIN_TOOL = {
 }
 
 
+_INBOX_HOOK_TOOL = {
+    "name": "union_inbox_hook",
+    "description": "Return unread Union messages for the automatic prompt hook. Returns an empty result "
+                   "when this project is not joined to Union.",
+    "inputSchema": _schema({}, []),
+}
+
+
 TOOL_DEFS: list[dict] = [
     {
         "name": "union_list_agents",
@@ -289,12 +297,6 @@ TOOL_DEFS: list[dict] = [
         "inputSchema": _schema({}, []),
     },
     {
-        "name": "union_inbox_hook",
-        "description": "Return unread Union messages for the automatic prompt hook. Returns an empty result "
-                       "when this project is not joined to Union.",
-        "inputSchema": _schema({}, []),
-    },
-    {
         "name": "union_status",
         "description": "Show this node's name, union, mode, and known peers. Optionally set status to "
                        "\"busy\" or \"idle\" so other agents can see whether you are free.",
@@ -304,8 +306,9 @@ TOOL_DEFS: list[dict] = [
 
 
 def tool_defs(harness: str) -> list[dict]:
-    """Codex needs an MCP join path; Claude Code uses /union:join instead."""
-    return [_JOIN_TOOL, *TOOL_DEFS] if harness == "codex" else TOOL_DEFS
+    """Codex needs an MCP join path and a prompt-hook inbox tool; Claude Code
+    uses /union:join and its own hooks instead, so it does not see them."""
+    return [_JOIN_TOOL, _INBOX_HOOK_TOOL, *TOOL_DEFS] if harness == "codex" else TOOL_DEFS
 
 
 def call_tool(tools: Tools, name: str, args: dict) -> str:

@@ -21,7 +21,7 @@ async def test_mcp_server_over_stdio(union, tmp_path):
             assert "Union" in (init.instructions or "")
             tools = await session.list_tools()
             names = sorted(t.name for t in tools.tools)
-            assert names == ["union_inbox", "union_inbox_hook", "union_list_agents", "union_reply", "union_send", "union_status"]
+            assert names == ["union_inbox", "union_list_agents", "union_reply", "union_send", "union_status"]
             send_tool = next(t for t in tools.tools if t.name == "union_send")
             assert set(send_tool.input_schema["properties"]) >= {"to", "text", "kind", "files", "wait_for_replies"}
             r = await session.call_tool("union_status", {})
@@ -72,5 +72,5 @@ def test_mcp_join_tool_is_codex_only():
     claude_tools = {tool["name"] for tool in tool_defs("claude-code")}
     codex_tools = {tool["name"] for tool in tool_defs("codex")}
 
-    assert "union_join" not in claude_tools
-    assert "union_join" in codex_tools
+    assert "union_join" not in claude_tools and "union_inbox_hook" not in claude_tools
+    assert "union_join" in codex_tools and "union_inbox_hook" in codex_tools
